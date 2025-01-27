@@ -14,16 +14,18 @@ public class ServerThread extends Thread{
     private Socket clienteSocket;
     private ConcurrentHashMap<String, Player> players;
     private List<ServerThread> threads;
-    private String username;
+    private List<String> censored;
+    String username;
     private String asignedColor;
     private PrintWriter writer;
     private int pv;
     private int money;
 
-    public ServerThread(Socket clienteSocket, ConcurrentHashMap<String, Player> jugadores,List<ServerThread> thread,int pv,int money) {
+    public ServerThread(Socket clienteSocket, ConcurrentHashMap<String, Player> jugadores,List<ServerThread> thread,int pv,int money,List<String> censored) {
         this.clienteSocket = clienteSocket;
         this.players = jugadores;
         this.threads = thread;
+        this.censored = censored;
         this.pv=pv;
         this.money = money;
     }
@@ -35,17 +37,41 @@ public class ServerThread extends Thread{
             writer.println("[SERVIDOR]: Ingresa tu nombre de usuario:");
             username = reader.readLine().trim();
 
-
             asignedColor = ServerStart.getColor();
             players.put(username, new Player(username,pv,money,asignedColor));
-            ServerStart.sendAll("[SERVIDOR]: " + asignedColor + username + " se ha unido al chat.\u001B[0m");
-
+            ServerStart.sendAll("[SERVIDOR]: " + username + " se ha unido al chat.\u001B[0m",username);
             String mensaje;
+            String lastmessage="";
             while ((mensaje = reader.readLine()) != null) {
+                boolean badword = false;
                 if (mensaje.startsWith("/")) {
                     commands(mensaje);
                 } else {
-                    ServerStart.sendAll(asignedColor + "[" + username + "]: " + mensaje + "\u001B[0m");
+                    String messageParts[]=mensaje.split(" ");
+                    for(String words:censored){
+                        if (mensaje.contains(words)){
+                            for(int i=0;i<messageParts.length;i++){
+                                if(messageParts[i].equalsIgnoreCase(words)){
+                                    badword=true;
+                                    messageParts[i]=switchWord(words.length());
+                                }
+                            }
+                        }
+                    }
+                    for(int i=0;i<messageParts.length;i++){
+                        lastmessage=lastmessage+messageParts[i]+" ";
+                    }
+                    if (badword){
+                        ServerStart.sendAll(asignedColor + "[" + username + "]: " + lastmessage + "\u001B[0m",username);
+                        lastmessage="";
+
+                    }else {
+                        ServerStart.sendAll(asignedColor + "[" + username + "]: " + mensaje + "\u001B[0m",username);
+
+                    }
+                    for (int i = 0; i < messageParts.length; i++) {
+                        messageParts[i] = "";
+                    }
                 }
             }
         } catch (IOException e) {
@@ -53,7 +79,7 @@ public class ServerThread extends Thread{
         } finally {
             players.remove(username);
             ServerStart.deleteThread(this);
-            ServerStart.sendAll("[SERVIDOR]: " + asignedColor + username + " ha abandonado el chat.\u001B[0m");
+            ServerStart.sendAll("[SERVIDOR]: " + username + " ha abandonado el chat.\u001B[0m",username);
             ServerStart.returnColor(asignedColor);
             try {
                 clienteSocket.close();
@@ -61,6 +87,14 @@ public class ServerThread extends Thread{
                 System.out.println("[SERVIDOR]: se ha cerrado el socket");
             }
         }
+    }
+    private String switchWord(int num){
+        StringBuilder censoredWord= new StringBuilder();
+        for (int i=0;i<num;i++){
+            censoredWord.append("*");
+        }
+        return censoredWord.toString();
+
     }
     private void commands(String message){
         String parts[] = message.split(" ");
@@ -73,7 +107,7 @@ public class ServerThread extends Thread{
                 }
                 break;
             case "/resumen":
-                resume();
+                resume_();
                 break;
             case "/salir":
                 closeConection();
@@ -100,21 +134,21 @@ public class ServerThread extends Thread{
             Player attacker = players.get(username);
             Player defensor = players.get(player);
             if (attacker.getMoney() < 5 || defensor.getPv() <= 0) {
-                ServerStart.sendAll("[SERVIDOR]: " + username + " atacó a " + player + " pero no surtió efecto.");
+                ServerStart.sendAll("[SERVIDOR]: " + username + " atacó a " + player + " pero no surtió efecto.",username);
             } else {
                 attacker.setMoney(attacker.getMoney() - 5);
                 defensor.setPv(defensor.getPv() - 10);
-                ServerStart.sendAll("[SERVIDOR]: " + username + " atacó a " + player + " (-10 PV).");
+                ServerStart.sendAll("[SERVIDOR]: " + username + " atacó a " + player + " (-10 PV).",username);
             }
         }
     }
-    private void resume(){
-        ServerStart.sendAll("=== Estado de los jugadores ===");
+    private void resume_(){
+        ServerStart.sendAll("=== Estado de los jugadores ===",username);
         String message = "";
         for(Player player: players.values()){
             message=message+player.getName()+" -- PV: "+player.getPv()+", Dinero: "+player.getMoney()+"\n";
         }
-        ServerStart.sendAll(message);
+        ServerStart.sendAll(message,username);
     }
     private void give(String amount, String player){
         if(player==null){
@@ -143,7 +177,9 @@ public class ServerThread extends Thread{
         }
     }
     private void information(){
-        this.toString();
+                this.sendMessage("=== Tus datos ===\n" +
+                        "PV: "+pv+"\n" +
+                        "Dinero: "+money);
     }
     private void closeConection() {
         try {

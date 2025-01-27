@@ -20,7 +20,7 @@ public class ClientStart {
                         System.out.println(mensaje);
                     }
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    System.out.println("[SERVIDOR]: Socket cerrado ");
                 }
             });
             lectorMensajes.start();
@@ -31,7 +31,7 @@ public class ClientStart {
                 escritor.println(entrada);
             }
         } catch (IOException e) {
-            System.out.println("[SERVIDOR]: Se cerro el socket ");
+            System.out.println("[SERVIDOR]: Socket cerrado ");
         }
     }
 }

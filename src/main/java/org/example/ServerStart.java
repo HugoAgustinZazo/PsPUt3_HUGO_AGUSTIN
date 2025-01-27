@@ -1,8 +1,12 @@
 package org.example;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,7 +31,11 @@ public class ServerStart {
     private static List<ServerThread> threads = new ArrayList<>();
     private static List<String> colors = new ArrayList<>();
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
+        String file = "censored.txt";
+        Path path = Paths.get(file);
+        List<String> censored = Files.readAllLines(path);
+
 
         synchronized (colors){
             for (String color: COLORS){
@@ -39,18 +47,29 @@ public class ServerStart {
 
                 while (true) {
                     Socket clientSocket = serverSocket.accept();
-                    ServerThread thread = new ServerThread(clientSocket, jugadores, threads,Start_Pv,Start_Money);
+                    ServerThread thread = new ServerThread(clientSocket, jugadores, threads,Start_Pv,Start_Money,censored);
                     threads.add(thread);
                     thread.start();
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                System.out.println("[SERVIDOR]: Socket cerrado");
             }
         }
 
-        public static synchronized void sendAll(String message) {
+        public static synchronized void sendAll(String message,String username) {
             for (ServerThread thread : threads) {
-                thread.sendMessage(message);
+                if(message.contains("[SERVIDOR]")) {
+                    thread.sendMessage(message);
+                }else{
+                    if(thread.username.equalsIgnoreCase(username)){
+                        thread.sendMessage(message);
+                    }else{
+                        thread.sendMessage("\t\t\t\t\t\t\t\t\t\t\t"+message);
+                    }
+                }
+            }
+            if (message.contains("[SERVIDOR]")){
+                System.out.println(message);
             }
         }
 
