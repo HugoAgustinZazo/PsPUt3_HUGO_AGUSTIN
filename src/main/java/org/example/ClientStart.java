@@ -24,7 +24,6 @@ public class ClientStart {
                 }
             });
             lectorMensajes.start();
-            System.out.println("[CLIENTE]: Escribe tu mensaje o comando:");
             String entrada = "";
             while (!entrada.equalsIgnoreCase("/salir")) {
                 entrada = scanner.nextLine();

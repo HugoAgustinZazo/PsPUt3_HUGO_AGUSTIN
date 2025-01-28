@@ -143,12 +143,12 @@ public class ServerThread extends Thread{
         }
     }
     private void resume_(){
-        ServerStart.sendAll("=== Estado de los jugadores ===",username);
-        String message = "";
+        StringBuilder message = new StringBuilder();
+        message.append("=== Estado de los jugadores ===\n");
         for(Player player: players.values()){
-            message=message+player.getName()+" -- PV: "+player.getPv()+", Dinero: "+player.getMoney()+"\n";
+            message.append(player.getName()).append(" -- PV: ").append(player.getPv()).append(", Dinero: ").append(player.getMoney()).append("\n");
         }
-        ServerStart.sendAll(message,username);
+        ServerStart.sendAll(message.toString(),username);
     }
     private void give(String amount, String player){
         if(player==null){
@@ -177,9 +177,10 @@ public class ServerThread extends Thread{
         }
     }
     private void information(){
+                Player player = players.get(username);
                 this.sendMessage("=== Tus datos ===\n" +
-                        "PV: "+pv+"\n" +
-                        "Dinero: "+money);
+                        "PV: "+player.getPv()+"\n" +
+                        "Dinero: "+player.getMoney());
     }
     private void closeConection() {
         try {

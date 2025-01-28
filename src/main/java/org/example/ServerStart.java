@@ -58,7 +58,7 @@ public class ServerStart {
 
         public static synchronized void sendAll(String message,String username) {
             for (ServerThread thread : threads) {
-                if(message.contains("[SERVIDOR]")) {
+                if(message.contains("[SERVIDOR]")||message.contains("=== Estado de los jugadores ===")) {
                     thread.sendMessage(message);
                 }else{
                     if(thread.username.equalsIgnoreCase(username)){
